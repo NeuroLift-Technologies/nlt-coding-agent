@@ -1,0 +1,42 @@
+name: agentos-build
+on:
+  push:
+    branches: [agentos-runner]
+    paths: [agentos-runner/**]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate lockfile
+        run: npm install --package-lock-only --ignore-scripts
+        working-directory: agentos-runner
+      - name: Build image
+        run: docker build --platform linux/amd64 -t agentos-runner .
+        working-directory: agentos-runner
+      - name: Save image
+        run: docker save agentos-runner -o image.tar
+      - name: Measure image
+        run: |
+          echo "SIZE=$(wc -c < image.tar)" >> "$GITHUB_ENV"
+          echo "MD5=$(openssl md5 -binary image.tar | base64 -w0)" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: image
+          path: image.tar
+          retention-days: 1
+      - name: Commit build metadata
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B agentos-meta
+          mkdir -p agentos-meta
+          printf '{"md5":"%s","size":%s,"run_id":"%s"}\n' "$MD5" "$SIZE" "${{ github.run_id }}" > agentos-meta/build-meta.json
+          git add agentos-meta/build-meta.json
+          git commit -m "Update build metadata"
+          git push -f origin agentos-meta

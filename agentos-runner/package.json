@@ -1,0 +1,9 @@
+{
+  "name": "agentos-runner",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@rivet-dev/agentos": "latest",
+    "rivetkit": "latest"
+  }
+}
