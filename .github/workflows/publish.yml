@@ -1,3 +1,5 @@
+# Publishes the prebuilt static Space payload to the Hugging Face Hub using
+# Trusted Publishers (keyless OIDC): https://huggingface.co/docs/hub/trusted-publishers
 name: Build and publish Hugging Face Space
 
 on:
