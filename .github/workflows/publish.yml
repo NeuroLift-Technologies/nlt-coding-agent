@@ -1,5 +1,5 @@
 # Publishes the prebuilt static Space payload to the Hugging Face Hub using
-# Trusted Publishers (keyless OIDC): https://huggingface.co/docs/hub/trusted-publishers
+# the HF_TOKEN repository secret.
 name: Build and publish Hugging Face Space
 
 on:
@@ -161,7 +161,7 @@ jobs:
 
       - name: Publish static files to Hugging Face
         env:
-          HF_OIDC_RESOURCE: spaces/divergent-tech/nlt-coding-agent
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_DEBUG: "1"
         run: |
           set -o pipefail
