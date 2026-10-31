@@ -4,7 +4,7 @@
 **Scope:** NLT Coding Agent React frontend  
 **Space:** `divergent-tech/nlt-coding-agent`  
 **Source:** `hf/` in this repository  
-**Build workflow:** `.github/workflows/publish-hf-space.yml`
+**Build workflow:** `.github/workflows/publish.yml`
 
 ## Deployment architecture
 
@@ -20,13 +20,19 @@ The Space metadata uses `sdk: static` and `app_file: index.html`. It intentional
 - The build uses Node.js 20 and the React app in `hf/`.
 - Only the compiled output and Space README are uploaded to Hugging Face; source remains maintained in GitHub.
 
-## Required GitHub configuration
+## Authentication and publishing
 
-Create a repository Actions secret:
+Publishing uses Hugging Face Trusted Publishers with GitHub Actions OIDC. No `HF_TOKEN` GitHub secret or long-lived Hugging Face access token is required.
 
-- `HF_TOKEN`: a Hugging Face access token with write access to the Space `divergent-tech/nlt-coding-agent`.
+The publisher must match these GitHub claims:
 
-Do not put the token in workflow YAML, source files, or Space metadata.
+- Repository: `NeuroLift-Technologies/nlt-coding-agent`
+- Branch: `main`
+- Workflow: `publish.yml`
+
+The publish job requests `id-token: write`, sets `HF_OIDC_RESOURCE=spaces/divergent-tech/nlt-coding-agent`, and uses the Hugging Face CLI to exchange the GitHub OIDC identity for a short-lived, Space-scoped token.
+
+Pull-request runs only build and upload a GitHub Actions artifact. They do not receive OIDC publishing permission and never publish to the Space.
 
 ## Local build
 
@@ -51,5 +57,5 @@ The React Space is the user-facing frontend surface. Agent orchestration, model 
 - The GitHub Actions build completes successfully.
 - The published Space contains `index.html` and its generated static assets.
 - Pull request builds never publish.
-- Publishing is gated by the `HF_TOKEN` GitHub Actions secret.
+- Publishing is gated by the GitHub Actions OIDC identity matching the Trusted Publisher claims.
 - No secrets are committed to either repository.
