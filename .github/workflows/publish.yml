@@ -87,5 +87,5 @@ jobs:
         env:
           HF_OIDC_RESOURCE: spaces/divergent-tech/nlt-coding-agent
         run: |
-          hf upload spaces/divergent-tech/nlt-coding-agent hf/deploy . \
+          hf upload divergent-tech/nlt-coding-agent hf/deploy . \
             --commit-message "Deploy static build from ${GITHUB_SHA::7}"
