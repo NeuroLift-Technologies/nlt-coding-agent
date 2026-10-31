@@ -63,26 +63,13 @@ jobs:
           path: hf/deploy/
           if-no-files-found: error
 
-  publish:
-    name: Publish to Hugging Face with OIDC
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
-    needs: build
+  diagnose_oidc:
+    name: Diagnose GitHub OIDC claims
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       id-token: write
     steps:
-      - name: Download prebuilt Space payload
-        uses: actions/download-artifact@v4
-        with:
-          name: nlt-coding-agent-hf-space
-          path: hf/deploy
-
-      - name: Install Hugging Face CLI
-        run: |
-          curl -LsSf https://hf.co/cli/install.sh | bash
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
       - name: Diagnose GitHub OIDC claims for Hugging Face
         shell: bash
         run: |
@@ -125,6 +112,26 @@ jobs:
           print("Selected GitHub OIDC claims (the ID token itself is never logged):")
           print(json.dumps(safe_claims, indent=2, sort_keys=True))
           '
+
+  publish:
+    name: Publish to Hugging Face with OIDC
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download prebuilt Space payload
+        uses: actions/download-artifact@v4
+        with:
+          name: nlt-coding-agent-hf-space
+          path: hf/deploy
+
+      - name: Install Hugging Face CLI
+        run: |
+          curl -LsSf https://hf.co/cli/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Publish static files to Hugging Face
         env:
