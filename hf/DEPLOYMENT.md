@@ -1,39 +1,55 @@
-# Hugging Face deployment plan
+# Hugging Face Static Space deployment
 
-**Status:** Planning  
-**Scope:** NLT Coding Agent  
-**Hosting boundary:** Hugging Face Space frontend or container runtime; Vercel remains the current full-stack application host.
+**Status:** Implemented in GitHub Actions  
+**Scope:** NLT Coding Agent React frontend  
+**Space:** `divergent-tech/nlt-coding-agent`  
+**Source:** `hf/` in this repository  
+**Build workflow:** `.github/workflows/publish-hf-space.yml`
 
-## Current architecture constraint
+## Deployment architecture
 
-The root application is a full-stack Next.js application. It uses App Router API endpoints, server-side session and request-cookie access, server actions, database access through Drizzle/Neon, and runtime integrations including Vercel Sandbox.
+The Hugging Face Space is a React static frontend. GitHub Actions performs the Node.js build and uploads the prebuilt output to the Space. This keeps compilation on GitHub-hosted runners rather than invoking the Hugging Face Static Space build service.
 
-A Hugging Face **Static Space** cannot host those server-side capabilities. A static publish workflow that runs the root `next build` and uploads its output would not produce a functionally equivalent application.
+The Space metadata uses `sdk: static` and `app_file: index.html`. It intentionally does not define `app_build_command`: the workflow publishes the compiled `index.html` and its static assets at the Space repository root.
 
-## Supported paths
+## Workflow behavior
 
-### Option A: Keep Vercel as the application runtime
+- Pull requests affecting `hf/**` run the React build and upload a build artifact, but do not publish to Hugging Face.
+- Pushes to `main` affecting `hf/**` build and publish the compiled static application.
+- Manual dispatch on `main` builds and publishes the Space.
+- The build uses Node.js 20 and the React app in `hf/`.
+- Only the compiled output and Space README are uploaded to Hugging Face; source remains maintained in GitHub.
 
-- Keep authentication, API routes, database operations, and sandbox orchestration on Vercel.
-- Use Hugging Face for model discovery, inference endpoints, datasets, Spaces, and other model-facing capabilities.
-- If a Hugging Face Space UI is needed, build a separately deployable frontend that calls the existing backend through an explicitly configured API origin.
+## Required GitHub configuration
 
-### Option B: Evaluate a Hugging Face Docker Space
+Create a repository Actions secret:
 
-- Package the complete Next.js server application in a Docker Space.
-- Define and validate the runtime start command, port binding, health behavior, and persistent-storage requirements.
-- Configure every required runtime secret in Space settings; never commit credentials.
-- Verify compatibility of OAuth callback URLs, database connectivity, sandbox execution, and any Vercel-specific SDK dependencies before treating the Space as a production host.
+- `HF_TOKEN`: a Hugging Face access token with write access to the Space `divergent-tech/nlt-coding-agent`.
 
-## Publishing workflow prerequisites
+Do not put the token in workflow YAML, source files, or Space metadata.
 
-Do not add an automated publish workflow until the target Space and deployment mode are selected.
+## Local build
 
-For a Docker Space, define the Space repository identifier and a Hugging Face write token as GitHub Actions secrets. For a static frontend, first isolate the frontend build from all server-only routes and dependencies, and define its backend API origin.
+From the repository root:
+
+```bash
+cd hf
+npm install --legacy-peer-deps
+npm run build
+```
+
+The production output is written to `hf/build/`.
+
+## Application boundary
+
+The root repository application is a full-stack Next.js application using server-side API routes, sessions/cookies, Drizzle/Neon, and Vercel Sandbox. Those capabilities are not included in this static Space build.
+
+The React Space is the user-facing frontend surface. Agent orchestration, model inference, repository operations, and code execution must be provided by separately configured backend services and exposed through explicit APIs.
 
 ## Acceptance criteria
 
-- The chosen deployment mode is explicit and matches the Space metadata.
-- No server-only functionality is silently omitted from a static build.
-- Secrets are injected at runtime or by protected CI configuration, never stored in Git.
-- Authentication, database access, and agent execution are tested end-to-end in the target runtime.
+- The GitHub Actions build completes successfully.
+- The published Space contains `index.html` and its generated static assets.
+- Pull request builds never publish.
+- Publishing is gated by the `HF_TOKEN` GitHub Actions secret.
+- No secrets are committed to either repository.
