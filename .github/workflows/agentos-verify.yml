@@ -1,0 +1,74 @@
+name: agentOS verify
+
+on:
+  push:
+    branches: [agentos-runner]
+    paths: ["agentos-verify/**", ".github/workflows/agentos-verify.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install rivetkit
+        run: |
+          mkdir -p verify && cd verify
+          npm init -y >/dev/null
+          npm install rivetkit
+
+      - name: Run actor verification
+        env:
+          RIVET_ENDPOINT: https://neurolifttechnologiesxpeh-api.onrivet.dev
+          RIVET_TOKEN: ${{ secrets.RIVET_TOKEN }}
+        run: |
+          cd verify
+          cat > verify.mjs <<'EOF'
+          import { createClient } from "rivetkit/client";
+          import fs from "node:fs";
+
+          const endpoint = process.env.RIVET_ENDPOINT;
+          const token = process.env.RIVET_TOKEN;
+          const result = { ok: false, run_id: process.env.GITHUB_RUN_ID };
+
+          if (!token) {
+            result.error = "RIVET_TOKEN secret is not set. Add it under Settings > Secrets and variables > Actions, then touch agentos-verify/VERIFY.md to retrigger.";
+          } else {
+            const client = createClient({ endpoint, token });
+            try {
+              const vm = client.vm.getOrCreate(["gha-verify"]);
+              const out = await vm.run({ command: "echo hello from agentOS" });
+              result.ok = !!out && typeof out.stdout !== "undefined";
+              result.output = out;
+            } catch (e) {
+              result.error = String((e && e.stack) || e);
+            } finally {
+              try { await client.close(); } catch {}
+            }
+          }
+
+          console.log(JSON.stringify(result, null, 2));
+          fs.writeFileSync("verify-result.json", JSON.stringify(result, null, 2));
+          process.exit(result.ok ? 0 : 1);
+          EOF
+          node verify.mjs
+
+      - name: Publish result to agentos-meta
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin agentos-meta
+          git checkout agentos-meta
+          mkdir -p agentos-meta
+          cp verify/verify-result.json agentos-meta/verify-result.json
+          git add agentos-meta/verify-result.json
+          git commit -m "Verify result: run ${{ github.run_id }}" || echo "nothing to commit"
+          git push origin agentos-meta
