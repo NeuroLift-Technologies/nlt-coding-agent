@@ -167,6 +167,7 @@ jobs:
           set -o pipefail
           hf upload divergent-tech/nlt-coding-agent hf/deploy . \
             --repo-type space \
+            --delete="*" \
             --commit-message "Deploy static build from ${GITHUB_SHA::7}" 2>&1 | tee /tmp/publish.log
 
       - name: Report publish failure as an issue
