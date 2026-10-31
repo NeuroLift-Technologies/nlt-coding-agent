@@ -1,0 +1,4 @@
+{
+  "command": "curl --fail-with-body -X PUT -H 'Content-MD5: dg9Z0nzDqID6wbLRqW9ecg==' --upload-file 'image.tar' 'https://storage.googleapis.com/pallet-867234efb263e44bd89d/uploads/e6e07f7d-0b0c-48a3-afc0-c375ef8dae93.tar?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=GOOG1EPCQFGC476HBV6BSKP6ZJM2AEBJB5SHTTJCSM6L6SQ6I7VVVYSTQ5IKA%2F20261031%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20261031T172012Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=content-length%3Bcontent-md5%3Bhost&X-Amz-Signature=dc14fe24bc15579db2c9c6fd8e71ed53b9ddfea6c6c10ee2fb3caf8f4011b31d'",
+  "run_id": "41223880933"
+}
