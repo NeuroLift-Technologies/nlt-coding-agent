@@ -39,16 +39,19 @@ const metricsPort = Number(process.env.RIVETKIT_METRICS_PORT ?? 9464);
 http.createServer(async (req, res) => {
 	try {
 		if (req.method === "GET" && req.url.startsWith("/metrics")) {
-			const metrics = await registry.routes.prometheusMetrics();
-			res.writeHead(200, { "content-type": "text/plain; version=0.0.4" });
-			res.end(metrics);
+			const response = await registry.routes.prometheusMetrics();
+			const text = await response.text();
+			res.writeHead(response.status, {
+				"content-type": response.headers.get("content-type") ?? "text/plain; version=0.0.4",
+			});
+			res.end(text);
 		} else {
 			res.writeHead(404);
 			res.end();
 		}
 	} catch (err) {
 		console.error('Metrics request error occurred');
-		res.writeHead(500);
+		if (!res.headersSent) res.writeHead(500);
 		res.end();
 	}
 }).listen(metricsPort, "127.0.0.1");
