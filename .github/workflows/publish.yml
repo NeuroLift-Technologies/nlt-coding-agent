@@ -121,6 +121,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      issues: write
     steps:
       - name: Download prebuilt Space payload
         uses: actions/download-artifact@v4
@@ -137,6 +138,27 @@ jobs:
         env:
           HF_OIDC_RESOURCE: spaces/divergent-tech/nlt-coding-agent
         run: |
+          set -o pipefail
           hf upload divergent-tech/nlt-coding-agent hf/deploy . \
             --repo-type space \
-            --commit-message "Deploy static build from ${GITHUB_SHA::7}"
+            --commit-message "Deploy static build from ${GITHUB_SHA::7}" 2>&1 | tee /tmp/publish.log
+
+      - name: Report publish failure as an issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "The publish step failed in workflow run ${GITHUB_RUN_NUMBER} (commit ${GITHUB_SHA})."
+            echo
+            echo "Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo
+            echo "Publish step output:"
+            echo '~~~'
+            tail -n 200 /tmp/publish.log
+            echo '~~~'
+          } > /tmp/issue-body.md
+          gh issue create \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "HF Space deploy failed (run #${GITHUB_RUN_NUMBER})" \
+            --body-file /tmp/issue-body.md
