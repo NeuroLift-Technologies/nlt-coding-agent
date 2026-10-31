@@ -14,23 +14,42 @@ jobs:
         with:
           node-version: 22
       - name: Generate lockfile
-        run: npm install --package-lock-only --ignore-scripts
+        continue-on-error: true
+        run: npm install --package-lock-only --ignore-scripts > ../lock.log 2>&1
         working-directory: agentos-runner
       - name: Build image
-        run: docker build --platform linux/amd64 -t agentos-runner .
+        continue-on-error: true
+        run: |
+          docker build --platform linux/amd64 -t agentos-runner . > ../build.log 2>&1
+          echo "BUILD_STATUS=$?" >> "$GITHUB_ENV"
         working-directory: agentos-runner
+      - name: Commit diagnostics
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B agentos-meta
+          mkdir -p agentos-meta
+          cp lock.log build.log agentos-meta/ 2>/dev/null || true
+          git add agentos-meta || true
+          git commit -m "Update build diagnostics" || true
+          git push -f origin agentos-meta
       - name: Save image
+        if: env.BUILD_STATUS == '0'
         run: docker save agentos-runner -o image.tar
       - name: Measure image
+        if: env.BUILD_STATUS == '0'
         run: |
           echo "SIZE=$(wc -c < image.tar)" >> "$GITHUB_ENV"
           echo "MD5=$(openssl md5 -binary image.tar | base64 -w0)" >> "$GITHUB_ENV"
       - uses: actions/upload-artifact@v4
+        if: env.BUILD_STATUS == '0'
         with:
           name: image
           path: image.tar
           retention-days: 1
       - name: Commit build metadata
+        if: env.BUILD_STATUS == '0'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
