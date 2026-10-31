@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@rivet-dev/agentos": "latest",
-    "rivetkit": "latest"
+    "rivetkit": "latest",
+    "@rivet-dev/agentos-core": "latest"
   }
 }

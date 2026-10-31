@@ -1,7 +1,23 @@
-import { agentOS, setup } from "@rivet-dev/agentos";
+import { actor, setup } from "rivetkit";
+import { AgentOs } from "@rivet-dev/agentos-core";
 import http from "node:http";
 
-const vm = agentOS({});
+export const vm = actor({
+	state: {},
+	actions: {
+		run: async (_c, { command } = {}) => {
+			const os = await AgentOs.create();
+			try {
+				const result = await os.process.exec(String(command ?? "echo hello from agentOS"), {
+					output: { capture: "all" },
+				});
+				return { stdout: result.stdout, stderr: result.stderr };
+			} finally {
+				await os.dispose();
+			}
+		},
+	},
+});
 
 const registry = setup({
 	startEngine: false,
