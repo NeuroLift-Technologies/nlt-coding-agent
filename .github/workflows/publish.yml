@@ -57,6 +57,18 @@ jobs:
           mkdir -p hf/deploy
           cp -R hf/build/. hf/deploy/
           cp hf/README.md hf/deploy/README.md
+          # Mirror everything under hf/ into the Space source/ subfolder,
+          # excluding build inputs, the build output, the payload staging
+          # directory, dependencies, and environment files.
+          mkdir -p hf/deploy/source
+          rsync -a \
+            --exclude 'build/' \
+            --exclude 'deploy/' \
+            --exclude 'node_modules/' \
+            --exclude '.env' \
+            --exclude '.env.*' \
+            --exclude '*.log' \
+            hf/ hf/deploy/source/
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
