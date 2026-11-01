@@ -61,3 +61,11 @@ Thumbs.db
 
 # opensrc - source code for packages
 opensrc/
+
+# cloned reference repos (not committed)
+hf/asfdk/
+hf/asfdk-harness/
+hf/pi/
+hf/governed-agent/
+hf/node_modules/
+hf/build/
