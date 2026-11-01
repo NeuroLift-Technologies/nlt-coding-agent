@@ -49,6 +49,7 @@ jobs:
         working-directory: hf
         env:
           CI: "true"
+          REACT_APP_HARNESS_ENDPOINT: ${{ vars.REACT_APP_HARNESS_ENDPOINT }}
         run: npm run build
 
       - name: Prepare prebuilt Space payload

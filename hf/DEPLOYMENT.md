@@ -46,7 +46,9 @@ npm run build
 
 The production output is written to `hf/build/`.
 
-## Application boundary
+## Repository configuration
+
+Set the GitHub Actions repository variable `REACT_APP_HARNESS_ENDPOINT` to the governed harness endpoint URL. If unset, the frontend reports an unconfigured state and disables prompt submission.
 
 The root repository application is a full-stack Next.js application using server-side API routes, sessions/cookies, Drizzle/Neon, and Vercel Sandbox. Those capabilities are not included in this static Space build.
 
