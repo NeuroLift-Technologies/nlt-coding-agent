@@ -1,0 +1,47 @@
+flowchart TB
+  subgraph UserLayer["User-facing layer"]
+    User["User"]
+    UI["Static React workspace UI<br/>HTML / JavaScript"]
+    User --> UI
+  end
+
+  subgraph Hosting["Frontend hosting"]
+    HF["Hugging Face Space<br/>divergent-tech/nlt-coding-agent"]
+    HF --> UI
+  end
+
+  subgraph RivetCloud["Rivet Cloud — neurolift-technologies cluster"]
+    AgentOS["Rivet AgentOS<br/>LIVE DEPLOYMENT"]
+    VM["Isolated execution VM / runner"]
+    FS["Workspace filesystem"]
+    Proc["Shell and process execution"]
+    Tools["Python · Node.js · npm · Git<br/>availability to verify"]
+    AgentOS --> VM
+    VM --> FS
+    VM --> Proc
+    Proc --> Tools
+    Proc <--> FS
+  end
+
+  UI <-->|Runtime integration<br/>PENDING VERIFICATION| AgentOS
+
+  subgraph BuildDeploy["Image build and deployment path"]
+    Repo["GitHub repository<br/>NeuroLift-Technologies/nlt-coding-agent"]
+    Docker["Docker image build"]
+    RivetDeploy["Rivet image upload and deployment"]
+    Repo --> Docker --> RivetDeploy
+  end
+  RivetDeploy --> AgentOS
+
+  subgraph SeparateApp["Separate application"]
+    Next["Repository root<br/>Next.js / Vercel app"]
+  end
+
+  Repo --- Next
+
+  classDef live fill:#d9f2e6,stroke:#23845b,color:#123d2b
+  classDef pending fill:#fff1cc,stroke:#b58105,color:#523900
+  classDef separate fill:#e8eaff,stroke:#5b63b5,color:#242957
+  class AgentOS,HF,Repo,Docker,RivetDeploy live
+  class VM,FS,Proc,Tools,UI pending
+  class Next separate
