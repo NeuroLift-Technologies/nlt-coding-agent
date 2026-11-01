@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "run_id": "41226562149",
+  "error": "RIVET_TOKEN secret is not set. Add it under Settings > Secrets and variables > Actions, then touch agentos-verify/VERIFY.md to retrigger."
+}

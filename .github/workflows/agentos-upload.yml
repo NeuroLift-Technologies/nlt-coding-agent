@@ -1,0 +1,23 @@
+name: agentos-upload
+on:
+  push:
+    branches: [agentos-meta]
+    paths: [agentos-meta/deploy-request.json]
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agentos-meta
+      - name: Download image artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN_ID=$(jq -r '.run_id' agentos-meta/build-meta.json)
+          gh run download "$RUN_ID" --name image
+      - name: Upload image to Rivet
+        run: bash -c "$(jq -r '.command' agentos-meta/deploy-request.json)"

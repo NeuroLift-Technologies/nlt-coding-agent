@@ -1,0 +1,76 @@
+name: agentOS verify
+
+on:
+  push:
+    branches: [agentos-meta]
+    paths: [agentos-meta/verify-request.json]
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check RIVET_TOKEN secret
+        env:
+          RIVET_TOKEN: ${{ secrets.RIVET_TOKEN }}
+        run: |
+          if [ -z "$RIVET_TOKEN" ]; then
+            echo "RIVET_TOKEN secret is not set." >&2
+            echo "Add it under Settings > Secrets and variables > Actions > Repository secrets." >&2
+            exit 1
+          fi
+
+      - name: Install rivetkit
+        run: |
+          mkdir -p verify && cd verify
+          npm init -y >/dev/null
+          npm install rivetkit@latest --no-audit --no-fund
+
+      - name: Run actor verification
+        id: verify
+        working-directory: verify
+        env:
+          RIVET_ENDPOINT: https://neurolifttechnologiesxpeh-api.onrivet.dev
+          RIVET_TOKEN: ${{ secrets.RIVET_TOKEN }}
+        run: |
+          cat > verify.mjs <<'EOF'
+          import { createClient } from "rivetkit/client";
+          const client = createClient({ endpoint: process.env.RIVET_ENDPOINT, token: process.env.RIVET_TOKEN });
+          const vm = client.vm.getOrCreate(["ci-verify-vm"]);
+          const result = await vm.run({ command: "echo hello from agentOS" });
+          console.log("RESULT: " + JSON.stringify(result));
+          await client.close();
+          EOF
+          node verify.mjs | tee result.txt
+
+      - name: Report outcome as issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ steps.verify.outcome }}
+        run: |
+          {
+            echo "agentOS actor verification outcome: $OUTCOME"
+            echo ""
+            echo "Endpoint: https://neurolifttechnologiesxpeh-api.onrivet.dev"
+            echo "Actor: vm (key ci-verify-vm), action run({ command: 'echo hello from agentOS' })"
+            echo ""
+            if [ -f verify/result.txt ]; then
+              echo '~~~'
+              cat verify/result.txt
+              echo '~~~'
+            else
+              echo "(no result output; see the run log for details)"
+            fi
+          } > report.md
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "agentOS verification: $OUTCOME" --body-file report.md

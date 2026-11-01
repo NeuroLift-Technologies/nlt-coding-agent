@@ -1,0 +1,69 @@
+name: agentos-build
+on:
+  push:
+    branches: [agentos-runner]
+    paths: [agentos-runner/**, .github/workflows/agentos-build.yml]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate lockfile
+        continue-on-error: true
+        run: npm install --package-lock-only --ignore-scripts > ../lock.log 2>&1
+        working-directory: agentos-runner
+      - name: Build image
+        continue-on-error: true
+        run: |
+          docker build --platform linux/amd64 -t agentos-runner . > ../build.log 2>&1
+          echo "BUILD_STATUS=$?" >> "$GITHUB_ENV"
+        working-directory: agentos-runner
+      - name: Report diagnostics
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "## lockfile log"; echo '~~~'; tail -c 30000 lock.log 2>/dev/null || echo "(missing)"; echo '~~~';
+            echo "## build log"; echo '~~~'; tail -c 30000 build.log 2>/dev/null || echo "(missing)"; echo '~~~';
+          } > diag.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B agentos-meta
+          mkdir -p agentos-meta
+          cp lock.log build.log agentos-meta/ 2>/dev/null || true
+          git add agentos-meta || true
+          git commit -m "Update build diagnostics" || true
+          { git push -f origin agentos-meta; echo "git push exit: $?"; } >> diag.md 2>&1
+          gh issue create --title "agentos-build diagnostics" --body-file diag.md || echo "issue create failed" >> diag.md
+      - name: Save image
+        if: env.BUILD_STATUS == '0'
+        run: docker save agentos-runner -o image.tar
+      - name: Measure image
+        if: env.BUILD_STATUS == '0'
+        run: |
+          echo "SIZE=$(wc -c < image.tar)" >> "$GITHUB_ENV"
+          echo "MD5=$(openssl md5 -binary image.tar | base64 -w0)" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        if: env.BUILD_STATUS == '0'
+        with:
+          name: image
+          path: image.tar
+          retention-days: 1
+      - name: Commit build metadata
+        if: env.BUILD_STATUS == '0'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B agentos-meta
+          mkdir -p agentos-meta
+          printf '{"md5":"%s","size":%s,"run_id":"%s"}\n' "$MD5" "$SIZE" "${{ github.run_id }}" > agentos-meta/build-meta.json
+          git add agentos-meta/build-meta.json
+          git commit -m "Update build metadata"
+          git push -f origin agentos-meta
