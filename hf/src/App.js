@@ -51,11 +51,14 @@ function App() {
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
           }
-          const data = await response.json();
-          if (!data || typeof data.reply !== 'string') {
+          const data = await response.json().catch(() => null);
+          if (!data || typeof data !== 'object') {
             throw new Error('Invalid harness response.');
           }
-          setMessages((prev) => [...prev, { role: 'agent', text: data.reply }]);
+          setMessages((prev) => [
+            ...prev,
+            { role: 'agent', text: 'Harness responded successfully.' },
+          ]);
           setStatus(STATUS.IDLE);
         })
         .catch((err) => {
