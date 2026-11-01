@@ -3,13 +3,20 @@ flowchart TB
 
   Root --> RootApp["/ — repository-root application"]
   Root --> HF["/hf — Hugging Face Space application"]
+  Root --> AgentOSRunner["/agentos-runner — AgentOS runner image and service"]
+  Root --> AgentOSMeta["/agentos-meta — build, deploy, and verification metadata"]
   Root --> Docs["/docs — project documentation"]
   Root --> Workflows["/.github/workflows — CI and publishing workflows"]
-  Root --> DockerBuild["Docker image build configuration<br/>exact file location to confirm"]
 
   RootApp --> Next["Next.js application<br/>Vercel deployment target"]
   HF --> Static["Static React workspace UI<br/>Hugging Face Space deployment target"]
   HF --> Metadata["Space README and metadata"]
+  AgentOSRunner --> Dockerfile["Dockerfile<br/>agentos-runner/Dockerfile"]
+  AgentOSRunner --> Ignore[".dockerignore"]
+  AgentOSRunner --> RunnerService["server.js and package.json"]
+  AgentOSMeta --> BuildMeta["build-meta.json"]
+  AgentOSMeta --> DeployMeta["deploy-request.json"]
+  AgentOSMeta --> VerifyMeta["verify-request.json / verify-result.json"]
   Docs --> Architecture["/architecture"]
   Architecture --> Diagrams["Mermaid architecture sources"]
   Workflows --> HFPipeline["Build and publish HF frontend"]
@@ -23,12 +30,13 @@ flowchart TB
     Rivet --> AgentOS --> VM --> Workspace
   end
 
+  Dockerfile --> ImagePipeline
   ImagePipeline --> Rivet
   Static -. "Runtime connection<br/>integration pending verification" .-> AgentOS
 
   classDef confirmed fill:#d9f2e6,stroke:#23845b,color:#123d2b
   classDef pending fill:#fff1cc,stroke:#b58105,color:#523900
   classDef proposed fill:#e8eaff,stroke:#5b63b5,color:#242957
-  class Root,RootApp,HF,Docs,Workflows,Next,Static,Metadata,Rivet,AgentOS confirmed
+  class Root,RootApp,HF,AgentOSRunner,AgentOSMeta,Docs,Workflows,Next,Static,Metadata,Dockerfile,Ignore,RunnerService,BuildMeta,DeployMeta,VerifyMeta,Rivet,AgentOS confirmed
   class VM,Workspace,ImagePipeline,HFPipeline pending
-  class DockerBuild,Architecture,Diagrams proposed
+  class Architecture,Diagrams proposed
