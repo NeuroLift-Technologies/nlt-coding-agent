@@ -1,0 +1,34 @@
+flowchart TB
+  Root["nlt-coding-agent/"]
+
+  Root --> RootApp["/ — repository-root application"]
+  Root --> HF["/hf — Hugging Face Space application"]
+  Root --> Docs["/docs — project documentation"]
+  Root --> Workflows["/.github/workflows — CI and publishing workflows"]
+  Root --> DockerBuild["Docker image build configuration<br/>exact file location to confirm"]
+
+  RootApp --> Next["Next.js application<br/>Vercel deployment target"]
+  HF --> Static["Static React workspace UI<br/>Hugging Face Space deployment target"]
+  HF --> Metadata["Space README and metadata"]
+  Docs --> Architecture["/architecture"]
+  Architecture --> Diagrams["Mermaid architecture sources"]
+  Workflows --> HFPipeline["Build and publish HF frontend"]
+  Workflows --> ImagePipeline["Build runtime image"]
+
+  subgraph HostedRuntime["Hosted runtime — outside the repository"]
+    Rivet["Rivet Cloud deployment"]
+    AgentOS["Rivet AgentOS — live"]
+    VM["Isolated VM / runner"]
+    Workspace["Project workspace and processes"]
+    Rivet --> AgentOS --> VM --> Workspace
+  end
+
+  ImagePipeline --> Rivet
+  Static -. "Runtime connection<br/>integration pending verification" .-> AgentOS
+
+  classDef confirmed fill:#d9f2e6,stroke:#23845b,color:#123d2b
+  classDef pending fill:#fff1cc,stroke:#b58105,color:#523900
+  classDef proposed fill:#e8eaff,stroke:#5b63b5,color:#242957
+  class Root,RootApp,HF,Docs,Workflows,Next,Static,Metadata,Rivet,AgentOS confirmed
+  class VM,Workspace,ImagePipeline,HFPipeline pending
+  class DockerBuild,Architecture,Diagrams proposed
