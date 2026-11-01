@@ -115,11 +115,11 @@ function App() {
             onChange={(event) => setPrompt(event.target.value)}
             placeholder="Describe a task..."
             aria-label="Task prompt"
-            disabled={status === STATUS.LOADING || status === STATUS.UNCONFIGURED}
+            disabled={status === STATUS.LOADING}
           />
           <button
             type="submit"
-            disabled={status === STATUS.LOADING || status === STATUS.UNCONFIGURED}
+            disabled={status === STATUS.LOADING}
           >
             {status === STATUS.LOADING ? 'Sending...' : 'Send'}
           </button>
