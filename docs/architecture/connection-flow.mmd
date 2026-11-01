@@ -1,0 +1,35 @@
+sequenceDiagram
+  actor User
+  participant UI as HF static workspace UI
+  participant Auth as Scoped credential handling
+  participant AO as Rivet AgentOS
+  participant VM as Isolated VM / runner
+  participant FS as Workspace filesystem
+  participant Proc as Shell / process runtime
+
+  User->>UI: Open coding workspace
+  UI->>Auth: Provide scoped runtime credential
+  Auth->>AO: Authenticate and connect
+  AO-->>UI: Connection or session result
+  Note over UI,AO: The connection path and authentication contract still require runtime verification.
+
+  User->>UI: Select or initialize workspace
+  UI->>AO: Workspace operation
+  AO->>VM: Route operation to execution environment
+  VM->>FS: List, read, or write project files
+  FS-->>UI: File results
+
+  User->>UI: Submit command
+  UI->>AO: Execute command request
+  AO->>VM: Start process
+  VM->>Proc: Run shell command
+  Proc->>FS: Read or write workspace files
+  Proc-->>AO: stdout, stderr, exit code
+  AO-->>UI: Execution result and status
+  UI-->>User: Display terminal output
+
+  Note over UI,Auth: Do not store credentials in browser local storage. Clear in-memory credentials on disconnect.
+  Note over AO,VM: Isolation, filesystem boundaries, and resource limits must be enforced by the runtime.
+  User->>UI: Disconnect
+  UI->>Auth: Clear in-memory credential
+  Note over AO,FS: Reconnection and workspace persistence remain to be verified.
