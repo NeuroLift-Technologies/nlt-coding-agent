@@ -1,0 +1,40 @@
+flowchart TD
+  A["Baseline: AgentOS is live on Rivet Cloud"] --> B["Phase 1 — Discover runtime contract"]
+  B --> B1["Confirm connection and authentication API"]
+  B --> B2["Identify workspace and VM selection model"]
+  B --> B3["Confirm filesystem and process APIs"]
+
+  B1 --> C["Phase 2 — Authenticated connection"]
+  B2 --> C
+  B3 --> C
+  C --> C1["Connect and display actual runtime status"]
+
+  C1 --> D["Phase 3 — Workspace operations"]
+  D --> D1["List directories and files"]
+  D --> D2["Read and write files"]
+  D --> D3["Initialize or select project workspace"]
+
+  D1 --> E["Phase 4 — Command execution"]
+  D2 --> E
+  D3 --> E
+  E --> E1["Execute shell commands"]
+  E --> E2["Verify Python, Node.js, npm, and Git"]
+  E --> E3["Capture stdout, stderr, and exit code"]
+
+  E1 --> F["Phase 5 — Reliability and security validation"]
+  E2 --> F
+  E3 --> F
+  F --> F1["Disconnect and reconnect"]
+  F --> F2["Verify workspace persistence"]
+  F --> F3["Verify filesystem and network isolation"]
+  F --> F4["Verify resource limits and authorization"]
+
+  F1 --> G["Milestone: operational authenticated coding workspace"]
+  F2 --> G
+  F3 --> G
+  F4 --> G
+
+  classDef confirmed fill:#d9f2e6,stroke:#23845b,color:#123d2b
+  classDef pending fill:#fff1cc,stroke:#b58105,color:#523900
+  class A confirmed
+  class B,B1,B2,B3,C,C1,D,D1,D2,D3,E,E1,E2,E3,F,F1,F2,F3,F4,G pending
