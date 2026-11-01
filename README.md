@@ -555,3 +555,52 @@ Confirm that:
 - **API keys** can now be per-user - users can override global API keys in their profile
 - **Breaking API changes**: If you have external integrations calling your API, they'll need to be updated to include authentication
 
+
+## agentOS Runner on Rivet
+
+This repository also hosts an agentOS runner that is deployed to a Rivet cluster and exposes an actor for executing commands inside an agentOS environment.
+
+### What is deployed
+
+- A RivetKit runner (`agentos-runner/server.js`) that defines an actor named `vm` with a single action, `run({ command })`. Each call boots an agentOS instance, executes the command with captured output, and disposes of the instance.
+- A Docker image (`agentos-runner/Dockerfile`, Node 22 slim) that runs the server, an HTTP status endpoint on `PORT`, and a Prometheus metrics endpoint on `RIVETKIT_METRICS_PORT`.
+
+### Live deployment
+
+- Cluster: `neurolift-technologies` (Rivet, region `us-east4`, pool `default`)
+- Pool public URL: https://neurolifttechnologiesxpeh.onrivet.dev
+- Engine endpoint: `https://neurolifttechnologiesxpeh-api.onrivet.dev`
+- Current build: `e6e07f7d-0b0c-48a3-afc0-c375ef8dae93`
+
+### Continuous delivery pipeline
+
+The pipeline runs entirely in GitHub Actions on two dedicated branches:
+
+1. Pushes to `agentos-runner/**` on the `agentos-runner` branch trigger `.github/workflows/agentos-build.yml`, which builds the Linux amd64 image, uploads it as the `image` artifact, and records the build metadata in `agentos-meta/build-meta.json` on the `agentos-meta` branch.
+2. Updating `agentos-meta/deploy-request.json` triggers `.github/workflows/agentos-upload.yml`, which downloads the image artifact and uploads it to Rivet using the presigned URL produced by `rivet.deploy.prepare`.
+3. Updating `agentos-meta/verify-request.json` triggers `.github/workflows/agentos-verify.yml`, which creates the `vm` actor, calls the `run` action, and reports the outcome as a repository issue.
+
+The workflows self-report results as issues so that the pipeline can be monitored without access to workflow logs.
+
+### Calling the actor
+
+Set `RIVET_ENDPOINT` to the engine endpoint above and `RIVET_TOKEN` to a Rivet admin token. The token must be stored as a secret (the verification workflow uses the repository secret `RIVET_TOKEN`); never commit it to source control.
+
+```javascript
+import { createClient } from "rivetkit/client";
+
+const client = createClient({
+  endpoint: process.env.RIVET_ENDPOINT,
+  token: process.env.RIVET_TOKEN,
+});
+
+const vm = client.vm.getOrCreate(["my-vm"]);
+const result = await vm.run({ command: "echo hello from agentOS" });
+console.log(result); // { stdout: "hello from agentOS\n", stderr: "" }
+
+await client.close();
+```
+
+### Required repository secret
+
+- `RIVET_TOKEN`: Rivet admin token for the `neurolift-technologies` cluster, configured under Settings, Secrets and variables, Actions, Repository secrets.
